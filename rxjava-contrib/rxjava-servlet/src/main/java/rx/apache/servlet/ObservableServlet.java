@@ -34,7 +34,8 @@ public class ObservableServlet {
         return Observable.create(new OnSubscribeFunc<ByteBuffer>() {
             @Override
             public Subscription onSubscribe(final Observer<? super ByteBuffer> observer) {
-                new ServletReadListener(in, observer);
+                ReadListener listener = new ServletReadListener(in, observer);
+                in.setReadListener(listener);
                 return new Subscription() {
                     @Override
                     public void unsubscribe() {
