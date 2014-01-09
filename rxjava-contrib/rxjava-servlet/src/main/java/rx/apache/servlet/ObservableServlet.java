@@ -46,4 +46,20 @@ public class ObservableServlet {
         });
     }
 
+    public static Observable<Void> create(final ServletOutputStream out) {
+        return Observable.create(new OnSubscribeFunc<Void>() {
+            @Override
+            public Subscription onSubscribe(final Observer<? super Void> observer) {
+                WriteListener listener = new ServletWriteListener(observer, out);
+                out.setWriteListener(listener);
+                return new Subscription() {
+                    @Override
+                    public void unsubscribe() {
+                        throw new UnsupportedOperationException();
+                    }
+                };
+            }
+        });
+    }
+
 }
