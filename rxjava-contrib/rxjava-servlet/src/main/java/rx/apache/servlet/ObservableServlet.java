@@ -19,7 +19,9 @@ import rx.Observable;
 import rx.Observable.*;
 import rx.Observer;
 import rx.Subscription;
+import rx.util.functions.Func2;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import javax.servlet.*;
 
@@ -39,7 +41,7 @@ public class ObservableServlet {
                 return new Subscription() {
                     @Override
                     public void unsubscribe() {
-                        throw new UnsupportedOperationException();
+                        //throw new UnsupportedOperationException();
                     }
                 };
             }
@@ -55,9 +57,33 @@ public class ObservableServlet {
                 return new Subscription() {
                     @Override
                     public void unsubscribe() {
-                        throw new UnsupportedOperationException();
+                        //throw new UnsupportedOperationException();
                     }
                 };
+            }
+        });
+    }
+
+    public static Observable<Void> write(final Observable<ByteBuffer> data, final ServletOutputStream out) {
+        return Observable.create(new OnSubscribeFunc<Void>() {
+            @Override
+            public Subscription onSubscribe(Observer<? super Void> t1) {
+                Observable<Void> events = create(out);
+                Observable<Void> writeobs = Observable.zip(data, events, new Func2<ByteBuffer, Void, Void>() {
+                    @Override
+                    public Void call(ByteBuffer byteBuffer, Void aVoid) {
+                        try {
+                            byte[] b = new byte[byteBuffer.remaining()];
+                            byteBuffer.get(b);
+                            System.out.println("writing byte[]");
+                            out.write(b);
+                        } catch (IOException ioe) {
+                            ioe.printStackTrace();
+                        }
+                        return null;
+                    }
+                });
+                return writeobs.subscribe(t1);
             }
         });
     }

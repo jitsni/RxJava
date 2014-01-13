@@ -37,6 +37,7 @@ class ServletWriteListener implements WriteListener {
     @Override
     public void onWritePossible() {
         do {
+            System.out.println("onWritePossible: calling onNext");
             observer.onNext(null);
         } while(out.isReady());
     }
