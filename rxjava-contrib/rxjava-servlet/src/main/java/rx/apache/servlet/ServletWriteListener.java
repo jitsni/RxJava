@@ -21,13 +21,16 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
 
 /**
- * A servlet {@link javax.servlet.ReadListener} that pushes data to an Observer
+ * A servlet {@link WriteListener} that pushes Observable events
+ * that indicate when data can be written
  *
  * @author Jitendra Kotamraju
  */
 class ServletWriteListener implements WriteListener {
     private final Observer<? super Void> observer;
     private final ServletOutputStream out;
+    // Accessed by container thread, but assigned by some other thread (hence volatile)
+    private volatile boolean unsubscribed;
 
     ServletWriteListener(Observer<? super Void> observer, final ServletOutputStream out) {
         this.observer = observer;
@@ -39,7 +42,7 @@ class ServletWriteListener implements WriteListener {
         do {
             System.out.println("onWritePossible: calling onNext");
             observer.onNext(null);
-        } while(out.isReady());
+        } while(!unsubscribed && out.isReady());
     }
 
     @Override
@@ -47,4 +50,8 @@ class ServletWriteListener implements WriteListener {
         observer.onError(t);
     }
 
+    public void unsubscribe() {
+        System.out.println("ServletWriteListener: unsubscribed ...");
+        unsubscribed = true;
+    }
 }

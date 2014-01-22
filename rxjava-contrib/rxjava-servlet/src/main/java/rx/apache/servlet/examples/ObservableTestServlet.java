@@ -65,14 +65,7 @@ public class ObservableTestServlet extends HttpServlet {
                     System.out.println("Read onCompleted=" + Thread.currentThread());
                     resp.setStatus(HttpServletResponse.SC_OK);
 
-                    Observable<ByteBuffer> data = Observable.from(
-                            ByteBuffer.wrap("10000000000000".getBytes()),
-                            ByteBuffer.wrap("20000000000000".getBytes()),
-                            ByteBuffer.wrap("30000000000000".getBytes()),
-                            ByteBuffer.wrap("40000000000000".getBytes()),
-                            ByteBuffer.wrap("50000000000000".getBytes()),
-                            ByteBuffer.wrap("60000000000000".getBytes())
-                    );
+                    Observable<ByteBuffer> data = data();
                     ServletOutputStream out = null;
                     try {
                         out = resp.getOutputStream();
@@ -115,8 +108,14 @@ public class ObservableTestServlet extends HttpServlet {
                 }
             });
 
+    }
 
-
+    Observable<ByteBuffer> data() {
+        ByteBuffer[] data = new ByteBuffer[10000];
+        for(int i=0; i < data.length; i++) {
+            data[i] = ByteBuffer.wrap((i+"0000000000000\n").getBytes());
+        }
+        return Observable.from(data);
     }
 
 }
