@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Netflix, Inc.
+ * Copyright 2014 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,8 @@ import org.mockito.Mockito;
 
 import rx.Observer;
 import rx.Subscription;
+import rx.observers.TestObserver;
 import rx.util.functions.Action1;
-import rx.util.functions.Func0;
 
 public class AsyncSubjectTest {
 
@@ -40,16 +40,16 @@ public class AsyncSubjectTest {
         AsyncSubject<String> subject = AsyncSubject.create();
 
         @SuppressWarnings("unchecked")
-        Observer<String> aObserver = mock(Observer.class);
-        subject.subscribe(aObserver);
+        Observer<String> observer = mock(Observer.class);
+        subject.toObservable().subscribe(new TestObserver<String>(observer));
 
         subject.onNext("one");
         subject.onNext("two");
         subject.onNext("three");
 
-        verify(aObserver, Mockito.never()).onNext(anyString());
-        verify(aObserver, Mockito.never()).onError(testException);
-        verify(aObserver, Mockito.never()).onCompleted();
+        verify(observer, Mockito.never()).onNext(anyString());
+        verify(observer, Mockito.never()).onError(testException);
+        verify(observer, Mockito.never()).onCompleted();
     }
 
     @Test
@@ -57,17 +57,17 @@ public class AsyncSubjectTest {
         AsyncSubject<String> subject = AsyncSubject.create();
 
         @SuppressWarnings("unchecked")
-        Observer<String> aObserver = mock(Observer.class);
-        subject.subscribe(aObserver);
+        Observer<String> observer = mock(Observer.class);
+        subject.toObservable().subscribe(new TestObserver<String>(observer));
 
         subject.onNext("one");
         subject.onNext("two");
         subject.onNext("three");
         subject.onCompleted();
 
-        verify(aObserver, times(1)).onNext("three");
-        verify(aObserver, Mockito.never()).onError(any(Throwable.class));
-        verify(aObserver, times(1)).onCompleted();
+        verify(observer, times(1)).onNext("three");
+        verify(observer, Mockito.never()).onError(any(Throwable.class));
+        verify(observer, times(1)).onCompleted();
     }
 
     @Test
@@ -75,15 +75,15 @@ public class AsyncSubjectTest {
         AsyncSubject<String> subject = AsyncSubject.create();
 
         @SuppressWarnings("unchecked")
-        Observer<String> aObserver = mock(Observer.class);
-        subject.subscribe(aObserver);
+        Observer<String> observer = mock(Observer.class);
+        subject.toObservable().subscribe(new TestObserver<String>(observer));
 
         subject.onNext(null);
         subject.onCompleted();
 
-        verify(aObserver, times(1)).onNext(null);
-        verify(aObserver, Mockito.never()).onError(any(Throwable.class));
-        verify(aObserver, times(1)).onCompleted();
+        verify(observer, times(1)).onNext(null);
+        verify(observer, Mockito.never()).onError(any(Throwable.class));
+        verify(observer, times(1)).onCompleted();
     }
 
     @Test
@@ -91,18 +91,18 @@ public class AsyncSubjectTest {
         AsyncSubject<String> subject = AsyncSubject.create();
 
         @SuppressWarnings("unchecked")
-        Observer<String> aObserver = mock(Observer.class);
+        Observer<String> observer = mock(Observer.class);
 
         subject.onNext("one");
         subject.onNext("two");
         subject.onNext("three");
         subject.onCompleted();
 
-        subject.subscribe(aObserver);
+        subject.toObservable().subscribe(new TestObserver<String>(observer));
 
-        verify(aObserver, times(1)).onNext("three");
-        verify(aObserver, Mockito.never()).onError(any(Throwable.class));
-        verify(aObserver, times(1)).onCompleted();
+        verify(observer, times(1)).onNext("three");
+        verify(observer, Mockito.never()).onError(any(Throwable.class));
+        verify(observer, times(1)).onCompleted();
     }
 
     @Test
@@ -110,7 +110,7 @@ public class AsyncSubjectTest {
         AsyncSubject<String> subject = AsyncSubject.create();
 
         @SuppressWarnings("unchecked")
-        Observer<String> aObserver = mock(Observer.class);
+        Observer<String> observer = mock(Observer.class);
 
         subject.onNext("one");
         subject.onNext("two");
@@ -119,11 +119,11 @@ public class AsyncSubjectTest {
         RuntimeException re = new RuntimeException("failed");
         subject.onError(re);
 
-        subject.subscribe(aObserver);
+        subject.toObservable().subscribe(new TestObserver<String>(observer));
 
-        verify(aObserver, times(1)).onError(re);
-        verify(aObserver, Mockito.never()).onNext(any(String.class));
-        verify(aObserver, Mockito.never()).onCompleted();
+        verify(observer, times(1)).onError(re);
+        verify(observer, Mockito.never()).onNext(any(String.class));
+        verify(observer, Mockito.never()).onCompleted();
     }
 
     @Test
@@ -131,8 +131,8 @@ public class AsyncSubjectTest {
         AsyncSubject<String> subject = AsyncSubject.create();
 
         @SuppressWarnings("unchecked")
-        Observer<String> aObserver = mock(Observer.class);
-        subject.subscribe(aObserver);
+        Observer<String> observer = mock(Observer.class);
+        subject.toObservable().subscribe(new TestObserver<String>(observer));
 
         subject.onNext("one");
         subject.onNext("two");
@@ -142,9 +142,9 @@ public class AsyncSubjectTest {
         subject.onError(new Throwable());
         subject.onCompleted();
 
-        verify(aObserver, Mockito.never()).onNext(anyString());
-        verify(aObserver, times(1)).onError(testException);
-        verify(aObserver, Mockito.never()).onCompleted();
+        verify(observer, Mockito.never()).onNext(anyString());
+        verify(observer, times(1)).onError(testException);
+        verify(observer, Mockito.never()).onCompleted();
     }
 
     @Test
@@ -152,24 +152,24 @@ public class AsyncSubjectTest {
         AsyncSubject<String> subject = AsyncSubject.create();
 
         @SuppressWarnings("unchecked")
-        Observer<String> aObserver = mock(Observer.class);
-        Subscription subscription = subject.subscribe(aObserver);
+        Observer<String> observer = mock(Observer.class);
+        Subscription subscription = subject.toObservable().subscribe(new TestObserver<String>(observer));
 
         subject.onNext("one");
         subject.onNext("two");
 
         subscription.unsubscribe();
 
-        verify(aObserver, Mockito.never()).onNext(anyString());
-        verify(aObserver, Mockito.never()).onError(any(Throwable.class));
-        verify(aObserver, Mockito.never()).onCompleted();
+        verify(observer, Mockito.never()).onNext(anyString());
+        verify(observer, Mockito.never()).onError(any(Throwable.class));
+        verify(observer, Mockito.never()).onCompleted();
 
         subject.onNext("three");
         subject.onCompleted();
 
-        verify(aObserver, Mockito.never()).onNext(anyString());
-        verify(aObserver, Mockito.never()).onError(any(Throwable.class));
-        verify(aObserver, Mockito.never()).onCompleted();
+        verify(observer, Mockito.never()).onNext(anyString());
+        verify(observer, Mockito.never()).onError(any(Throwable.class));
+        verify(observer, Mockito.never()).onCompleted();
     }
 
     @Test
@@ -177,34 +177,34 @@ public class AsyncSubjectTest {
         AsyncSubject<String> subject = AsyncSubject.create();
 
         @SuppressWarnings("unchecked")
-        Observer<String> aObserver = mock(Observer.class);
-        subject.subscribe(aObserver);
+        Observer<String> observer = mock(Observer.class);
+        subject.toObservable().subscribe(new TestObserver<String>(observer));
 
         subject.onCompleted();
 
-        InOrder inOrder = inOrder(aObserver);
-        inOrder.verify(aObserver, never()).onNext(null);
-        inOrder.verify(aObserver, never()).onNext(any(String.class));
-        inOrder.verify(aObserver, times(1)).onCompleted();
+        InOrder inOrder = inOrder(observer);
+        inOrder.verify(observer, never()).onNext(null);
+        inOrder.verify(observer, never()).onNext(any(String.class));
+        inOrder.verify(observer, times(1)).onCompleted();
         inOrder.verifyNoMoreInteractions();
     }
 
     /**
      * Can receive timeout if subscribe never receives an onError/onCompleted ... which reveals a race condition.
      */
-    @Test(timeout=10000)
+    @Test(timeout = 10000)
     public void testSubscribeCompletionRaceCondition() {
         /*
          * With non-threadsafe code this fails most of the time on my dev laptop and is non-deterministic enough
          * to act as a unit test to the race conditions.
          * 
-         * With the synchronization code in place I can not get this to fail on my laptop. 
+         * With the synchronization code in place I can not get this to fail on my laptop.
          */
         for (int i = 0; i < 50; i++) {
             final AsyncSubject<String> subject = AsyncSubject.create();
             final AtomicReference<String> value1 = new AtomicReference<String>();
 
-            subject.subscribe(new Action1<String>() {
+            subject.toObservable().subscribe(new Action1<String>() {
 
                 @Override
                 public void call(String t1) {
@@ -270,7 +270,7 @@ public class AsyncSubjectTest {
         public void run() {
             try {
                 // a timeout exception will happen if we don't get a terminal state 
-                String v = subject.timeout(2000, TimeUnit.MILLISECONDS).toBlockingObservable().single();
+                String v = subject.toObservable().timeout(2000, TimeUnit.MILLISECONDS).toBlockingObservable().single();
                 value.set(v);
             } catch (Exception e) {
                 e.printStackTrace();

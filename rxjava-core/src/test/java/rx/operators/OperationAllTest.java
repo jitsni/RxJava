@@ -1,12 +1,12 @@
 /**
- * Copyright 2013 Netflix, Inc.
- *
+ * Copyright 2014 Netflix, Inc.
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,6 +22,7 @@ import org.junit.Test;
 
 import rx.Observable;
 import rx.Observer;
+import rx.observers.TestObserver;
 import rx.util.functions.Func1;
 
 public class OperationAllTest {
@@ -37,7 +38,7 @@ public class OperationAllTest {
             public Boolean call(String s) {
                 return s.length() == 3;
             }
-        })).subscribe(observer);
+        })).subscribe(new TestObserver<Boolean>(observer));
 
         verify(observer).onNext(true);
         verify(observer).onCompleted();
@@ -55,7 +56,7 @@ public class OperationAllTest {
             public Boolean call(String s) {
                 return s.length() == 3;
             }
-        })).subscribe(observer);
+        })).subscribe(new TestObserver<Boolean>(observer));
 
         verify(observer).onNext(false);
         verify(observer).onCompleted();
@@ -73,7 +74,7 @@ public class OperationAllTest {
             public Boolean call(String s) {
                 return s.length() == 3;
             }
-        })).subscribe(observer);
+        })).subscribe(new TestObserver<Boolean>(observer));
 
         verify(observer).onNext(true);
         verify(observer).onCompleted();
@@ -92,7 +93,7 @@ public class OperationAllTest {
             public Boolean call(String s) {
                 return s.length() == 3;
             }
-        })).subscribe(observer);
+        })).subscribe(new TestObserver<Boolean>(observer));
 
         verify(observer).onError(error);
         verifyNoMoreInteractions(observer);

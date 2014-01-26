@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Netflix, Inc.
+ * Copyright 2014 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,7 +81,7 @@ public final class OperationScan {
 
         @Override
         public Subscription onSubscribe(final Observer<? super T> observer) {
-            return sequence.subscribe(new Observer<T>() {
+            return sequence.subscribe(new Observer<T>(observer) {
 
                 // has to be synchronized so that the initial value is always sent only once.
                 @Override
@@ -125,13 +125,14 @@ public final class OperationScan {
         }
     }
 
-    private static class AccumulatingObserver<T, R> implements Observer<T> {
+    private static class AccumulatingObserver<T, R> extends Observer<T> {
         private final Observer<? super R> observer;
         private final Func2<R, ? super T, R> accumulatorFunction;
 
         private R acc;
 
         private AccumulatingObserver(Observer<? super R> observer, R initialValue, Func2<R, ? super T, R> accumulator) {
+            super(observer);
             this.observer = observer;
             this.accumulatorFunction = accumulator;
 

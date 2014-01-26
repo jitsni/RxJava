@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Netflix, Inc.
+ * Copyright 2014 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,8 @@ public abstract class RxJavaErrorHandler {
 
     /**
      * Receives all Exceptions from an {@link Observable} passed to {@link Observer#onError(Throwable)}.
+     * <p>
+     * This should NEVER throw an Exception. Make sure to try/catch(Throwable) all code inside this method implementation.
      * 
      * @param e
      *            Exception

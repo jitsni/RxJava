@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Netflix, Inc.
+ * Copyright 2014 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import rx.util.functions.Func1;
 public class GroupedObservable<K, T> extends Observable<T> {
     private final K key;
 
-    public GroupedObservable(K key, OnSubscribeFunc<T> onSubscribe) {
+    public GroupedObservable(K key, OnSubscribe<T> onSubscribe) {
         super(onSubscribe);
         this.key = key;
     }

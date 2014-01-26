@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Netflix, Inc.
+ * Copyright 2014 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ public class OperationRepeat<T> implements Observable.OnSubscribeFunc<T> {
         compositeSubscription.add(scheduler.schedule(new Action1<Action0>() {
             @Override
             public void call(final Action0 self) {
-                innerSubscription.set(source.subscribe(new Observer<T>() {
+                innerSubscription.set(source.subscribe(new Observer<T>(observer) {
 
                     @Override
                     public void onCompleted() {

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Netflix, Inc.
+ * Copyright 2014 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import rx.Observable;
 import rx.Observable.OnSubscribeFunc;
 import rx.Observer;
 import rx.Subscription;
-import rx.subscriptions.CompositeSubscription;
 import rx.subscriptions.SerialSubscription;
 
 /**
@@ -33,6 +32,7 @@ import rx.subscriptions.SerialSubscription;
 public class OperationSkipUntil<T, U> implements OnSubscribeFunc<T> {
     protected final Observable<T> source;
     protected final Observable<U> other;
+
     public OperationSkipUntil(Observable<T> source, Observable<U> other) {
         this.source = source;
         this.other = other;
@@ -42,33 +42,29 @@ public class OperationSkipUntil<T, U> implements OnSubscribeFunc<T> {
     public Subscription onSubscribe(Observer<? super T> t1) {
         return new ResultManager(t1).init();
     }
+
     /** Manage the source and other observers. */
-    private class ResultManager implements Subscription, Observer<T> {
+    private class ResultManager extends Observer<T>  {
         final Observer<? super T> observer;
-        final CompositeSubscription cancel;
         final Object guard = new Object();
         final AtomicBoolean running = new AtomicBoolean();
+
         public ResultManager(Observer<? super T> observer) {
             this.observer = observer;
-            this.cancel = new CompositeSubscription();
-        }
-        public ResultManager init() {
-            
-            SerialSubscription toSource = new SerialSubscription();
-            SerialSubscription toOther = new SerialSubscription();
-            
-            cancel.add(toSource);
-            cancel.add(toOther);
-            
-            toSource.setSubscription(source.subscribe(this));
-            toOther.setSubscription(other.subscribe(new OtherObserver(toOther)));
-            
-            return this;
         }
 
-        @Override
-        public void unsubscribe() {
-            cancel.unsubscribe();
+        public ResultManager init() {
+
+            SerialSubscription toSource = new SerialSubscription();
+            SerialSubscription toOther = new SerialSubscription();
+
+            add(toSource);
+            add(toOther);
+
+            toSource.set(source.subscribe(this));
+            toOther.set(other.subscribe(new OtherObserver(toOther)));
+
+            return this;
         }
 
         @Override
@@ -93,10 +89,11 @@ public class OperationSkipUntil<T, U> implements OnSubscribeFunc<T> {
                 unsubscribe();
             }
         }
-        
+
         /** Observe the other stream. */
-        private class OtherObserver implements Observer<U> {
+        private class OtherObserver extends Observer<U> {
             final Subscription self;
+
             public OtherObserver(Subscription self) {
                 this.self = self;
             }
@@ -116,7 +113,7 @@ public class OperationSkipUntil<T, U> implements OnSubscribeFunc<T> {
             public void onCompleted() {
                 self.unsubscribe();
             }
-            
+
         }
     }
 }

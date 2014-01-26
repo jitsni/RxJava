@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Netflix, Inc.
+ * Copyright 2014 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.mockito.MockitoAnnotations;
 
 import rx.Observable;
 import rx.Observer;
+import rx.observers.TestObserver;
 import rx.util.functions.Func1;
 import rx.util.functions.Func2;
 import rx.util.functions.Functions;
@@ -33,44 +34,47 @@ import rx.util.functions.Functions;
 public class OperationReduceTest {
     @Mock
     Observer<Object> observer;
+
     @Before
     public void before() {
         MockitoAnnotations.initMocks(this);
     }
+
     Func2<Integer, Integer, Integer> sum = new Func2<Integer, Integer, Integer>() {
         @Override
         public Integer call(Integer t1, Integer t2) {
             return t1 + t2;
         }
     };
-    
+
     @Test
     public void testAggregateAsIntSum() {
-        
-        Observable<Integer> result = Observable.from(1, 2, 3, 4, 5).reduce(0, sum).map(Functions.<Integer>identity());
-        
-        result.subscribe(observer);
-        
+
+        Observable<Integer> result = Observable.from(1, 2, 3, 4, 5).reduce(0, sum).map(Functions.<Integer> identity());
+
+        result.subscribe(new TestObserver<Object>(observer));
+
         verify(observer).onNext(1 + 2 + 3 + 4 + 5);
         verify(observer).onCompleted();
         verify(observer, never()).onError(any(Throwable.class));
     }
-    
-    static class CustomException extends RuntimeException { }
-    
+
+    static class CustomException extends RuntimeException {
+    }
+
     @Test
     public void testAggregateAsIntSumSourceThrows() {
         Observable<Integer> result = Observable.concat(Observable.from(1, 2, 3, 4, 5),
-            Observable.<Integer>error(new CustomException()))
-            .reduce(0, sum).map(Functions.<Integer>identity());
-        
-        result.subscribe(observer);
-        
+                Observable.<Integer> error(new CustomException()))
+                .reduce(0, sum).map(Functions.<Integer> identity());
+
+        result.subscribe(new TestObserver<Object>(observer));
+
         verify(observer, never()).onNext(any());
         verify(observer, never()).onCompleted();
         verify(observer, times(1)).onError(any(CustomException.class));
     }
-    
+
     @Test
     public void testAggregateAsIntSumAccumulatorThrows() {
         Func2<Integer, Integer, Integer> sumErr = new Func2<Integer, Integer, Integer>() {
@@ -79,12 +83,12 @@ public class OperationReduceTest {
                 throw new CustomException();
             }
         };
-        
+
         Observable<Integer> result = Observable.from(1, 2, 3, 4, 5)
-            .reduce(0, sumErr).map(Functions.<Integer>identity());
-        
-        result.subscribe(observer);
-        
+                .reduce(0, sumErr).map(Functions.<Integer> identity());
+
+        result.subscribe(new TestObserver<Object>(observer));
+
         verify(observer, never()).onNext(any());
         verify(observer, never()).onCompleted();
         verify(observer, times(1)).onError(any(CustomException.class));
@@ -92,7 +96,7 @@ public class OperationReduceTest {
 
     @Test
     public void testAggregateAsIntSumResultSelectorThrows() {
-        
+
         Func1<Integer, Integer> error = new Func1<Integer, Integer>() {
 
             @Override
@@ -100,12 +104,12 @@ public class OperationReduceTest {
                 throw new CustomException();
             }
         };
-        
+
         Observable<Integer> result = Observable.from(1, 2, 3, 4, 5)
-            .reduce(0, sum).map(error);
-        
-        result.subscribe(observer);
-        
+                .reduce(0, sum).map(error);
+
+        result.subscribe(new TestObserver<Object>(observer));
+
         verify(observer, never()).onNext(any());
         verify(observer, never()).onCompleted();
         verify(observer, times(1)).onError(any(CustomException.class));

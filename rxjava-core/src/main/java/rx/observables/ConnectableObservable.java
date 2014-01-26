@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Netflix, Inc.
+ * Copyright 2014 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ import rx.operators.OperationRefCount;
 
 public abstract class ConnectableObservable<T> extends Observable<T> {
 
-    protected ConnectableObservable(OnSubscribeFunc<T> onSubscribe) {
+    protected ConnectableObservable(OnSubscribe<T> onSubscribe) {
         super(onSubscribe);
     }
 

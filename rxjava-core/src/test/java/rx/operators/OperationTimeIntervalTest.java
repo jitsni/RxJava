@@ -1,12 +1,12 @@
 /**
- * Copyright 2013 Netflix, Inc.
- *
+ * Copyright 2014 Netflix, Inc.
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,6 +27,7 @@ import org.mockito.MockitoAnnotations;
 
 import rx.Observable;
 import rx.Observer;
+import rx.observers.TestObserver;
 import rx.schedulers.TestScheduler;
 import rx.subjects.PublishSubject;
 import rx.util.TimeInterval;
@@ -47,13 +48,13 @@ public class OperationTimeIntervalTest {
         MockitoAnnotations.initMocks(this);
         testScheduler = new TestScheduler();
         subject = PublishSubject.create();
-        observable = subject.timeInterval(testScheduler);
+        observable = subject.toObservable().timeInterval(testScheduler);
     }
 
     @Test
     public void testTimeInterval() {
         InOrder inOrder = inOrder(observer);
-        observable.subscribe(observer);
+        observable.subscribe(new TestObserver<TimeInterval<Integer>>(observer));
 
         testScheduler.advanceTimeBy(1000, TIME_UNIT);
         subject.onNext(1);

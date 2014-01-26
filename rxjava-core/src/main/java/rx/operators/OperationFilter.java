@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Netflix, Inc.
+ * Copyright 2014 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,7 @@ public final class OperationFilter<T> {
         }
 
         public Subscription onSubscribe(final Observer<? super T> observer) {
-            final SafeObservableSubscription subscription = new SafeObservableSubscription();
-            return subscription.wrap(that.subscribe(new Observer<T>() {
+            return that.subscribe(new Observer<T>(observer) {
                 public void onNext(T value) {
                     try {
                         if (predicate.call(value)) {
@@ -52,8 +51,7 @@ public final class OperationFilter<T> {
                         }
                     } catch (Throwable ex) {
                         observer.onError(ex);
-                        // this will work if the sequence is asynchronous, it will have no effect on a synchronous observable
-                        subscription.unsubscribe();
+                        unsubscribe();
                     }
                 }
 
@@ -64,7 +62,7 @@ public final class OperationFilter<T> {
                 public void onCompleted() {
                     observer.onCompleted();
                 }
-            }));
+            });
         }
 
     }

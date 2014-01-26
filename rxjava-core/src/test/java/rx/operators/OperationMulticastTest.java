@@ -1,12 +1,12 @@
 /**
- * Copyright 2013 Netflix, Inc.
- *
+ * Copyright 2014 Netflix, Inc.
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,6 +22,7 @@ import org.junit.Test;
 import rx.Observer;
 import rx.Subscription;
 import rx.observables.ConnectableObservable;
+import rx.observers.TestObserver;
 import rx.subjects.PublishSubject;
 import rx.subjects.Subject;
 
@@ -31,12 +32,12 @@ public class OperationMulticastTest {
     public void testMulticast() {
         Subject<String, String> source = PublishSubject.create();
 
-        ConnectableObservable<String> multicasted = OperationMulticast.multicast(source,
+        ConnectableObservable<String> multicasted = OperationMulticast.multicast(source.toObservable(),
                 PublishSubject.<String> create());
 
         @SuppressWarnings("unchecked")
         Observer<String> observer = mock(Observer.class);
-        multicasted.subscribe(observer);
+        multicasted.subscribe(new TestObserver<String>(observer));
 
         source.onNext("one");
         source.onNext("two");
@@ -59,12 +60,12 @@ public class OperationMulticastTest {
     public void testMulticastConnectTwice() {
         Subject<String, String> source = PublishSubject.create();
 
-        ConnectableObservable<String> multicasted = OperationMulticast.multicast(source,
+        ConnectableObservable<String> multicasted = OperationMulticast.multicast(source.toObservable(),
                 PublishSubject.<String> create());
 
         @SuppressWarnings("unchecked")
         Observer<String> observer = mock(Observer.class);
-        multicasted.subscribe(observer);
+        multicasted.subscribe(new TestObserver<String>(observer));
 
         source.onNext("one");
 
@@ -84,12 +85,12 @@ public class OperationMulticastTest {
     public void testMulticastDisconnect() {
         Subject<String, String> source = PublishSubject.create();
 
-        ConnectableObservable<String> multicasted = OperationMulticast.multicast(source,
+        ConnectableObservable<String> multicasted = OperationMulticast.multicast(source.toObservable(),
                 PublishSubject.<String> create());
 
         @SuppressWarnings("unchecked")
         Observer<String> observer = mock(Observer.class);
-        multicasted.subscribe(observer);
+        multicasted.subscribe(new TestObserver<String>(observer));
 
         source.onNext("one");
 

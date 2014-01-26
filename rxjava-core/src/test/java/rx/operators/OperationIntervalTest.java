@@ -1,12 +1,12 @@
 /**
- * Copyright 2013 Netflix, Inc.
- *
+ * Copyright 2014 Netflix, Inc.
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,8 +27,9 @@ import org.mockito.InOrder;
 import rx.Observable;
 import rx.Observer;
 import rx.Subscription;
-import rx.schedulers.TestScheduler;
 import rx.observables.ConnectableObservable;
+import rx.observers.TestObserver;
+import rx.schedulers.TestScheduler;
 
 public class OperationIntervalTest {
 
@@ -48,7 +49,7 @@ public class OperationIntervalTest {
     @Test
     public void testInterval() {
         Observable<Long> w = Observable.create(OperationInterval.interval(1, TimeUnit.SECONDS, scheduler));
-        Subscription sub = w.subscribe(observer);
+        Subscription sub = w.subscribe(new TestObserver<Long>(observer));
 
         verify(observer, never()).onNext(0L);
         verify(observer, never()).onCompleted();
@@ -73,8 +74,8 @@ public class OperationIntervalTest {
     @Test
     public void testWithMultipleSubscribersStartingAtSameTime() {
         Observable<Long> w = Observable.create(OperationInterval.interval(1, TimeUnit.SECONDS, scheduler));
-        Subscription sub1 = w.subscribe(observer);
-        Subscription sub2 = w.subscribe(observer2);
+        Subscription sub1 = w.subscribe(new TestObserver<Long>(observer));
+        Subscription sub2 = w.subscribe(new TestObserver<Long>(observer2));
 
         verify(observer, never()).onNext(anyLong());
         verify(observer2, never()).onNext(anyLong());
@@ -112,12 +113,12 @@ public class OperationIntervalTest {
     @Test
     public void testWithMultipleStaggeredSubscribers() {
         Observable<Long> w = Observable.create(OperationInterval.interval(1, TimeUnit.SECONDS, scheduler));
-        Subscription sub1 = w.subscribe(observer);
+        Subscription sub1 = w.subscribe(new TestObserver<Long>(observer));
 
         verify(observer, never()).onNext(anyLong());
 
         scheduler.advanceTimeTo(2, TimeUnit.SECONDS);
-        Subscription sub2 = w.subscribe(observer2);
+        Subscription sub2 = w.subscribe(new TestObserver<Long>(observer2));
 
         InOrder inOrder1 = inOrder(observer);
         inOrder1.verify(observer, times(1)).onNext(0L);
@@ -152,13 +153,13 @@ public class OperationIntervalTest {
     @Test
     public void testWithMultipleStaggeredSubscribersAndPublish() {
         ConnectableObservable<Long> w = Observable.create(OperationInterval.interval(1, TimeUnit.SECONDS, scheduler)).publish();
-        Subscription sub1 = w.subscribe(observer);
+        Subscription sub1 = w.subscribe(new TestObserver<Long>(observer));
         w.connect();
 
         verify(observer, never()).onNext(anyLong());
 
         scheduler.advanceTimeTo(2, TimeUnit.SECONDS);
-        Subscription sub2 = w.subscribe(observer2);
+        Subscription sub2 = w.subscribe(new TestObserver<Long>(observer2));
 
         InOrder inOrder1 = inOrder(observer);
         inOrder1.verify(observer, times(1)).onNext(0L);

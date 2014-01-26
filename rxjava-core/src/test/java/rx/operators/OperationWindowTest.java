@@ -1,12 +1,12 @@
 /**
- * Copyright 2013 Netflix, Inc.
- *
+ * Copyright 2014 Netflix, Inc.
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,6 +16,8 @@
 package rx.operators;
 
 import static org.junit.Assert.*;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
 import static rx.operators.OperationWindow.*;
 
 import java.util.ArrayList;
@@ -28,8 +30,10 @@ import org.junit.Test;
 import rx.Observable;
 import rx.Observer;
 import rx.Subscription;
+import rx.observers.TestObserver;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
+import rx.subjects.PublishSubject;
 import rx.subscriptions.Subscriptions;
 import rx.util.functions.Action0;
 import rx.util.functions.Action1;
@@ -50,15 +54,17 @@ public class OperationWindowTest {
         final List<List<T>> lists = new ArrayList<List<T>>();
         Observable.concat(observables.map(new Func1<Observable<T>, Observable<List<T>>>() {
             @Override
-            public Observable<List<T>> call(Observable<T> xs) { return xs.toList(); }
+            public Observable<List<T>> call(Observable<T> xs) {
+                return xs.toList();
+            }
         }))
                 .toBlockingObservable()
                 .forEach(new Action1<List<T>>() {
-            @Override
-            public void call(List<T> xs) {
-                lists.add(xs);
-            }
-        });
+                    @Override
+                    public void call(List<T> xs) {
+                        lists.add(xs);
+                    }
+                });
         return lists;
     }
 
@@ -88,7 +94,7 @@ public class OperationWindowTest {
 
     @Test
     public void testOverlappingWindows() {
-        Observable<String> subject = Observable.from(new String[]{"zero", "one", "two", "three", "four", "five"}, Schedulers.currentThread());
+        Observable<String> subject = Observable.from(new String[] { "zero", "one", "two", "three", "four", "five" }, Schedulers.currentThread());
         Observable<Observable<String>> windowed = Observable.create(window(subject, 3, 1));
 
         List<List<String>> windows = toLists(windowed);
@@ -320,5 +326,225 @@ public class OperationWindowTest {
                 });
             }
         };
+    }
+
+    @Test
+    public void testWindowViaObservableNormal1() {
+        PublishSubject<Integer> source = PublishSubject.create();
+        PublishSubject<Integer> boundary = PublishSubject.create();
+
+        @SuppressWarnings("unchecked")
+        final Observer<Object> o = mock(Observer.class);
+
+        final List<Observer<Object>> values = new ArrayList<Observer<Object>>();
+
+        Observer<Observable<Integer>> wo = new Observer<Observable<Integer>>() {
+            @Override
+            public void onNext(Observable<Integer> args) {
+                @SuppressWarnings("unchecked")
+                final Observer<Object> mo = mock(Observer.class);
+                values.add(mo);
+
+                args.subscribe(new TestObserver<Object>(mo));
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                o.onError(e);
+            }
+
+            @Override
+            public void onCompleted() {
+                o.onCompleted();
+            }
+        };
+
+        source.toObservable().window(boundary.toObservable()).subscribe(new TestObserver<Observable<Integer>>(wo));
+
+        int n = 30;
+        for (int i = 0; i < n; i++) {
+            source.onNext(i);
+            if (i % 3 == 2 && i < n - 1) {
+                boundary.onNext(i / 3);
+            }
+        }
+        source.onCompleted();
+
+        assertEquals(n / 3, values.size());
+
+        int j = 0;
+        for (Observer<Object> mo : values) {
+            for (int i = 0; i < 3; i++) {
+                verify(mo).onNext(j + i);
+            }
+            verify(mo).onCompleted();
+            verify(mo, never()).onError(any(Throwable.class));
+            j += 3;
+        }
+
+        verify(o).onCompleted();
+        verify(o, never()).onError(any(Throwable.class));
+    }
+
+    @Test
+    public void testWindowViaObservableBoundaryCompletes() {
+        PublishSubject<Integer> source = PublishSubject.create();
+        PublishSubject<Integer> boundary = PublishSubject.create();
+
+        @SuppressWarnings("unchecked")
+        final Observer<Object> o = mock(Observer.class);
+
+        final List<Observer<Object>> values = new ArrayList<Observer<Object>>();
+
+        Observer<Observable<Integer>> wo = new Observer<Observable<Integer>>() {
+            @Override
+            public void onNext(Observable<Integer> args) {
+                @SuppressWarnings("unchecked")
+                final Observer<Object> mo = mock(Observer.class);
+                values.add(mo);
+
+                args.subscribe(new TestObserver<Object>(mo));
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                o.onError(e);
+            }
+
+            @Override
+            public void onCompleted() {
+                o.onCompleted();
+            }
+        };
+
+        source.toObservable().window(boundary.toObservable()).subscribe(new TestObserver<Observable<Integer>>(wo));
+
+        int n = 30;
+        for (int i = 0; i < n; i++) {
+            source.onNext(i);
+            if (i % 3 == 2 && i < n - 1) {
+                boundary.onNext(i / 3);
+            }
+        }
+        boundary.onCompleted();
+
+        assertEquals(n / 3, values.size());
+
+        int j = 0;
+        for (Observer<Object> mo : values) {
+            for (int i = 0; i < 3; i++) {
+                verify(mo).onNext(j + i);
+            }
+            verify(mo).onCompleted();
+            verify(mo, never()).onError(any(Throwable.class));
+            j += 3;
+        }
+
+        verify(o).onCompleted();
+        verify(o, never()).onError(any(Throwable.class));
+    }
+
+    @Test
+    public void testWindowViaObservableBoundaryThrows() {
+        PublishSubject<Integer> source = PublishSubject.create();
+        PublishSubject<Integer> boundary = PublishSubject.create();
+
+        @SuppressWarnings("unchecked")
+        final Observer<Object> o = mock(Observer.class);
+
+        final List<Observer<Object>> values = new ArrayList<Observer<Object>>();
+
+        Observer<Observable<Integer>> wo = new Observer<Observable<Integer>>() {
+            @Override
+            public void onNext(Observable<Integer> args) {
+                @SuppressWarnings("unchecked")
+                final Observer<Object> mo = mock(Observer.class);
+                values.add(mo);
+
+                args.subscribe(new TestObserver<Object>(mo));
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                o.onError(e);
+            }
+
+            @Override
+            public void onCompleted() {
+                o.onCompleted();
+            }
+        };
+
+        source.toObservable().window(boundary.toObservable()).subscribe(new TestObserver<Observable<Integer>>(wo));
+
+        source.onNext(0);
+        source.onNext(1);
+        source.onNext(2);
+
+        boundary.onError(new OperationReduceTest.CustomException());
+
+        assertEquals(1, values.size());
+
+        Observer<Object> mo = values.get(0);
+
+        verify(mo).onNext(0);
+        verify(mo).onNext(1);
+        verify(mo).onNext(2);
+        verify(mo).onError(any(OperationReduceTest.CustomException.class));
+
+        verify(o, never()).onCompleted();
+        verify(o).onError(any(OperationReduceTest.CustomException.class));
+    }
+
+    @Test
+    public void testWindowViaObservableourceThrows() {
+        PublishSubject<Integer> source = PublishSubject.create();
+        PublishSubject<Integer> boundary = PublishSubject.create();
+
+        @SuppressWarnings("unchecked")
+        final Observer<Object> o = mock(Observer.class);
+
+        final List<Observer<Object>> values = new ArrayList<Observer<Object>>();
+
+        Observer<Observable<Integer>> wo = new Observer<Observable<Integer>>() {
+            @Override
+            public void onNext(Observable<Integer> args) {
+                @SuppressWarnings("unchecked")
+                final Observer<Object> mo = mock(Observer.class);
+                values.add(mo);
+
+                args.subscribe(new TestObserver<Object>(mo));
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                o.onError(e);
+            }
+
+            @Override
+            public void onCompleted() {
+                o.onCompleted();
+            }
+        };
+
+        source.toObservable().window(boundary.toObservable()).subscribe(new TestObserver<Observable<Integer>>(wo));
+
+        source.onNext(0);
+        source.onNext(1);
+        source.onNext(2);
+
+        source.onError(new OperationReduceTest.CustomException());
+
+        assertEquals(1, values.size());
+
+        Observer<Object> mo = values.get(0);
+
+        verify(mo).onNext(0);
+        verify(mo).onNext(1);
+        verify(mo).onNext(2);
+        verify(mo).onError(any(OperationReduceTest.CustomException.class));
+
+        verify(o, never()).onCompleted();
+        verify(o).onError(any(OperationReduceTest.CustomException.class));
     }
 }

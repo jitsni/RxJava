@@ -1,12 +1,12 @@
 /**
- * Copyright 2013 Netflix, Inc.
- *
+ * Copyright 2014 Netflix, Inc.
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,6 +27,7 @@ import org.mockito.InOrder;
 import rx.Observable;
 import rx.Observer;
 import rx.Subscription;
+import rx.observers.TestObserver;
 import rx.subscriptions.Subscriptions;
 
 public class OperationRetryTest {
@@ -36,7 +37,7 @@ public class OperationRetryTest {
         @SuppressWarnings("unchecked")
         Observer<String> observer = mock(Observer.class);
         Observable<String> origin = Observable.create(new FuncWithErrors(2));
-        origin.subscribe(observer);
+        origin.subscribe(new TestObserver<String>(observer));
 
         InOrder inOrder = inOrder(observer);
         inOrder.verify(observer, times(1)).onNext("beginningEveryTime");
@@ -52,7 +53,7 @@ public class OperationRetryTest {
         @SuppressWarnings("unchecked")
         Observer<String> observer = mock(Observer.class);
         Observable<String> origin = Observable.create(new FuncWithErrors(NUM_FAILURES));
-        Observable.create(retry(origin, NUM_RETRIES)).subscribe(observer);
+        Observable.create(retry(origin, NUM_RETRIES)).subscribe(new TestObserver<String>(observer));
 
         InOrder inOrder = inOrder(observer);
         // should show 2 attempts (first time fail, second time (1st retry) fail)
@@ -72,7 +73,7 @@ public class OperationRetryTest {
         @SuppressWarnings("unchecked")
         Observer<String> observer = mock(Observer.class);
         Observable<String> origin = Observable.create(new FuncWithErrors(NUM_FAILURES));
-        Observable.create(retry(origin, NUM_RETRIES)).subscribe(observer);
+        Observable.create(retry(origin, NUM_RETRIES)).subscribe(new TestObserver<String>(observer));
 
         InOrder inOrder = inOrder(observer);
         // should show 3 attempts
@@ -92,7 +93,7 @@ public class OperationRetryTest {
         @SuppressWarnings("unchecked")
         Observer<String> observer = mock(Observer.class);
         Observable<String> origin = Observable.create(new FuncWithErrors(NUM_FAILURES));
-        Observable.create(retry(origin)).subscribe(observer);
+        Observable.create(retry(origin)).subscribe(new TestObserver<String>(observer));
 
         InOrder inOrder = inOrder(observer);
         // should show 3 attempts

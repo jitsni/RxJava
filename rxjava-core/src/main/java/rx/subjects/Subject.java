@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Netflix, Inc.
+ * Copyright 2014 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package rx.subjects;
 import rx.Observable;
 import rx.Observer;
 
-public abstract class Subject<T, R> extends Observable<R> implements Observer<T> {
-    protected Subject(OnSubscribeFunc<R> onSubscribe) {
-        super(onSubscribe);
-    }
+public abstract class Subject<T, R> extends Observer<T> {
+
+    public abstract Observable<R> toObservable();
+
 }

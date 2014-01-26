@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Netflix, Inc.
+ * Copyright 2014 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -275,7 +275,7 @@ public class OperationCombineLatest {
         /**
          * Observes a specific source and communicates with the collector.
          */
-        final class SourceObserver implements Observer<T> {
+        final class SourceObserver extends Observer<T> {
             final SafeObservableSubscription self;
             final Collector collector;
             final int index;

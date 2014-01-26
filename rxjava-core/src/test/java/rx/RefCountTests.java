@@ -1,12 +1,12 @@
 /**
- * Copyright 2013 Netflix, Inc.
- *
+ * Copyright 2014 Netflix, Inc.
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,6 +27,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
 
+import rx.observers.TestObserver;
 import rx.schedulers.TestScheduler;
 import rx.subscriptions.Subscriptions;
 import rx.util.functions.Action0;
@@ -57,9 +58,9 @@ public class RefCountTests {
         });
         Observable<Integer> refCounted = observable.publish().refCount();
         Observer<Integer> observer = mock(Observer.class);
-        Subscription first = refCounted.subscribe(observer);
+        Subscription first = refCounted.subscribe(new TestObserver<Integer>(observer));
         assertEquals(1, subscriptionCount.get());
-        Subscription second = refCounted.subscribe(observer);
+        Subscription second = refCounted.subscribe(new TestObserver<Integer>(observer));
         assertEquals(1, subscriptionCount.get());
         first.unsubscribe();
         assertEquals(0, unsubscriptionCount.get());

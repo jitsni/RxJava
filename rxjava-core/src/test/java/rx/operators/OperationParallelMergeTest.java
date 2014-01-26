@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Netflix, Inc.
+ * Copyright 2014 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ public class OperationParallelMergeTest {
         PublishSubject<String> p3 = PublishSubject.<String> create();
         PublishSubject<String> p4 = PublishSubject.<String> create();
 
-        Observable<Observable<String>> fourStreams = Observable.<Observable<String>> from(p1, p2, p3, p4);
+        Observable<Observable<String>> fourStreams = Observable.<Observable<String>> from(p1.toObservable(), p2.toObservable(), p3.toObservable(), p4.toObservable());
 
         Observable<Observable<String>> twoStreams = OperationParallelMerge.parallelMerge(fourStreams, 2);
         Observable<Observable<String>> threeStreams = OperationParallelMerge.parallelMerge(fourStreams, 3);

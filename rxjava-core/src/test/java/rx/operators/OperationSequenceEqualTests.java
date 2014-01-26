@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Netflix, Inc.
+ * Copyright 2014 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,15 @@
  */
 package rx.operators;
 
-import static org.mockito.Matchers.isA;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
 
 import org.junit.Test;
 import org.mockito.InOrder;
 
 import rx.Observable;
 import rx.Observer;
+import rx.observers.TestObserver;
 import rx.util.functions.Func2;
 
 public class OperationSequenceEqualTests {
@@ -134,7 +133,7 @@ public class OperationSequenceEqualTests {
     private void verifyResult(Observable<Boolean> observable, boolean result) {
         @SuppressWarnings("unchecked")
         Observer<Boolean> observer = mock(Observer.class);
-        observable.subscribe(observer);
+        observable.subscribe(new TestObserver<Boolean>(observer));
 
         InOrder inOrder = inOrder(observer);
         inOrder.verify(observer, times(1)).onNext(result);
@@ -145,7 +144,7 @@ public class OperationSequenceEqualTests {
     private void verifyError(Observable<Boolean> observable) {
         @SuppressWarnings("unchecked")
         Observer<Boolean> observer = mock(Observer.class);
-        observable.subscribe(observer);
+        observable.subscribe(new TestObserver<Boolean>(observer));
 
         InOrder inOrder = inOrder(observer);
         inOrder.verify(observer, times(1)).onError(isA(TestException.class));

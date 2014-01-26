@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Netflix, Inc.
+ * Copyright 2014 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ public final class OperationFinally {
             return sequence.subscribe(new FinallyObserver(observer));
         }
 
-        private class FinallyObserver implements Observer<T> {
+        private class FinallyObserver extends Observer<T> {
             private final Observer<? super T> observer;
 
             FinallyObserver(Observer<? super T> observer) {

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Netflix, Inc.
+ * Copyright 2014 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,8 +74,7 @@ public class OperationSkipLast {
                 throw new IndexOutOfBoundsException(
                         "count could not be negative");
             }
-            final SafeObservableSubscription subscription = new SafeObservableSubscription();
-            return subscription.wrap(source.subscribe(new Observer<T>() {
+            return source.subscribe(new Observer<T>(observer) {
 
                 private final ReentrantLock lock = new ReentrantLock();
 
@@ -104,7 +103,7 @@ public class OperationSkipLast {
                             observer.onNext(value);
                         } catch (Throwable ex) {
                             observer.onError(ex);
-                            subscription.unsubscribe();
+                            unsubscribe();
                         }
                         return;
                     }
@@ -120,19 +119,21 @@ public class OperationSkipLast {
                         }
                     } catch (Throwable ex) {
                         observer.onError(ex);
-                        subscription.unsubscribe();
+                        unsubscribe();
                     } finally {
                         lock.unlock();
                     }
                 }
 
-            }));
+            });
         }
     }
-    
+
     /**
      * Skip delivering values in the time window before the values.
-     * @param <T> the result value type
+     * 
+     * @param <T>
+     *            the result value type
      */
     public static final class SkipLastTimed<T> implements OnSubscribeFunc<T> {
         final Observable<? extends T> source;
@@ -149,14 +150,15 @@ public class OperationSkipLast {
         public Subscription onSubscribe(Observer<? super T> t1) {
             return source.subscribe(new SourceObserver<T>(t1, timeInMillis, scheduler));
         }
+
         /** Observes the source. */
-        private static final class SourceObserver<T> implements Observer<T> {
+        private static final class SourceObserver<T> extends Observer<T> {
             final Observer<? super T> observer;
             final long timeInMillis;
             final Scheduler scheduler;
             List<Timestamped<T>> buffer = new ArrayList<Timestamped<T>>();
 
-            public SourceObserver(Observer<? super T> observer, 
+            public SourceObserver(Observer<? super T> observer,
                     long timeInMillis, Scheduler scheduler) {
                 this.observer = observer;
                 this.timeInMillis = timeInMillis;
@@ -195,7 +197,7 @@ public class OperationSkipLast {
                     buffer = Collections.emptyList();
                 }
             }
-            
+
         }
     }
 }

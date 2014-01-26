@@ -1,12 +1,12 @@
 /**
- * Copyright 2013 Netflix, Inc.
- *
+ * Copyright 2014 Netflix, Inc.
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,7 @@ import rx.Observable;
 import rx.Observable.OnSubscribeFunc;
 import rx.Observer;
 import rx.Subscription;
+import rx.observers.SafeObserver;
 import rx.subscriptions.CompositeSubscription;
 import rx.subscriptions.Subscriptions;
 import rx.util.functions.Func0;
@@ -42,13 +43,8 @@ public class OperationUsing {
                         resourceSubscription = resource;
                     }
                     Observable<T> observable = observableFactory.call(resource);
-                    SafeObservableSubscription subscription = new SafeObservableSubscription();
-                    // Use SafeObserver to guarantee resourceSubscription will
-                    // be unsubscribed.
-                    return subscription.wrap(new CompositeSubscription(
-                            observable.subscribe(new SafeObserver<T>(
-                                    subscription, observer)),
-                            resourceSubscription));
+                    // Use SafeObserver to guarantee resourceSubscription will be unsubscribed.
+                    return new CompositeSubscription(observable.subscribe(new SafeObserver<T>(observer)), resourceSubscription);
                 } catch (Throwable e) {
                     resourceSubscription.unsubscribe();
                     return Observable.<T> error(e).subscribe(observer);

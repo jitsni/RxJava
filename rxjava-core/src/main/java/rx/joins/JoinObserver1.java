@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Netflix, Inc.
+ * Copyright 2014 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,42 +24,45 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import rx.Notification;
 import rx.Observable;
 import rx.Observer;
+import rx.observers.SafeObserver;
 import rx.operators.SafeObservableSubscription;
-import rx.operators.SafeObserver;
 import rx.util.functions.Action1;
 
 /**
  * Default implementation of a join observer.
  */
-public final class JoinObserver1<T> implements Observer<Notification<T>>, JoinObserver {
+public final class JoinObserver1<T> extends Observer<Notification<T>> implements JoinObserver {
     private Object gate;
     private final Observable<T> source;
     private final Action1<Throwable> onError;
     private final List<ActivePlan0> activePlans;
     private final Queue<Notification<T>> queue;
-    private final SafeObservableSubscription subscription = new SafeObservableSubscription();
-    private volatile boolean done;
     private final AtomicBoolean subscribed = new AtomicBoolean(false);
     private final SafeObserver<Notification<T>> safeObserver;
-    
+
     public JoinObserver1(Observable<T> source, Action1<Throwable> onError) {
         this.source = source;
         this.onError = onError;
         queue = new LinkedList<Notification<T>>();
         activePlans = new ArrayList<ActivePlan0>();
-        safeObserver = new SafeObserver<Notification<T>>(subscription, new InnerObserver());
+        safeObserver = new SafeObserver<Notification<T>>(new InnerObserver());
+        // add this subscription so it gets unsubscribed when the parent does
+        add(safeObserver);
     }
+
     public Queue<Notification<T>> queue() {
         return queue;
     }
+
     public void addActivePlan(ActivePlan0 activePlan) {
         activePlans.add(activePlan);
     }
+
     @Override
     public void subscribe(Object gate) {
         if (subscribed.compareAndSet(false, true)) {
             this.gate = gate;
-            subscription.wrap(source.materialize().subscribe(this));
+            source.materialize().subscribe(this);
         } else {
             throw new IllegalStateException("Can only be subscribed to once.");
         }
@@ -70,12 +73,36 @@ public final class JoinObserver1<T> implements Observer<Notification<T>>, JoinOb
         queue.remove();
     }
 
-    private final class InnerObserver implements Observer<Notification<T>> {
+
+    @Override
+    public void onNext(Notification<T> args) {
+        safeObserver.onNext(args);
+    }
+
+    @Override
+    public void onError(Throwable e) {
+        safeObserver.onError(e);
+    }
+
+    @Override
+    public void onCompleted() {
+        safeObserver.onCompleted();
+    }
+
+    void removeActivePlan(ActivePlan0 activePlan) {
+        activePlans.remove(activePlan);
+        if (activePlans.isEmpty()) {
+            unsubscribe();
+        }
+    }
+    
+    
+    private final class InnerObserver extends Observer<Notification<T>> {
 
         @Override
         public void onNext(Notification<T> args) {
             synchronized (gate) {
-                if (!done) {
+                if (!isUnsubscribed()) {
                     if (args.isOnError()) {
                         onError.call(args.getThrowable());
                         return;
@@ -100,35 +127,5 @@ public final class JoinObserver1<T> implements Observer<Notification<T>>, JoinOb
             // not expected or ignored
         }
     }
-    
-    @Override
-    public void onNext(Notification<T> args) {
-        safeObserver.onNext(args);
-    }
 
-    @Override
-    public void onError(Throwable e) {
-        safeObserver.onError(e);
-    }
-
-    @Override
-    public void onCompleted() {
-        safeObserver.onCompleted();
-    }
-    
-    void removeActivePlan(ActivePlan0 activePlan) {
-        activePlans.remove(activePlan);
-        if (activePlans.isEmpty()) {
-            unsubscribe();
-        }
-    }
-
-    @Override
-    public void unsubscribe() {
-        if (!done) {
-            done = true;
-            subscription.unsubscribe();
-        }
-    }
-    
 }

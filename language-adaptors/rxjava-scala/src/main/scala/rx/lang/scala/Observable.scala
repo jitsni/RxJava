@@ -310,9 +310,8 @@ trait Observable[+T]
    *         their index. Indices start at 0.
    */
   def zipWithIndex: Observable[(T, Int)] = {
-    val fScala: (T, Integer) => (T, Int) = (elem: T, index: Integer) => (elem, index)
-    val fJava : Func2[_ >: T, Integer, _ <: (T, Int)] = fScala
-    toScalaObservable[(T, Int)](asJavaObservable.mapWithIndex[(T, Int)](fJava))
+    var n = 0;
+    this.map(x => { val result = (x,n); n += 1; result })
   }
 
   /**
@@ -1326,6 +1325,30 @@ trait Observable[+T]
   }
 
   /**
+   * Groups the items emitted by this Observable according to a specified discriminator function and terminates these groups
+   * according to a function.
+   *
+   * @param f
+   *            a function that extracts the key from an item
+   * @param closings
+   *            the function that accepts the key of a given group and an observable representing that group, and returns
+   *            an observable that emits a single Closing when the group should be closed.
+   * @tparam K 
+   *            the type of the keys returned by the discriminator function.
+   * @tparam Closing
+   *            the type of the element emitted from the closings observable.
+   * @return an Observable that emits `(key, observable)` pairs, where `observable`
+   *         contains all items for which `f` returned `key` before `closings` emits a value.
+   */
+  def groupByUntil[K, Closing](f: T => K, closings: (K, Observable[T])=>Observable[Closing]): Observable[(K, Observable[T])] = {
+    val fclosing: Func1[_ >: rx.observables.GroupedObservable[K, _ <: T], _ <: rx.Observable[_ <: Closing]] =
+      (jGrObs: rx.observables.GroupedObservable[K, _ <: T]) => closings(jGrObs.getKey, toScalaObservable[T](jGrObs)).asJavaObservable
+    val o1 = asJavaObservable.groupByUntil[K, Closing](f, fclosing) : rx.Observable[_ <: rx.observables.GroupedObservable[K, _ <: T]]
+    val func = (o: rx.observables.GroupedObservable[K, _ <: T]) => (o.getKey, toScalaObservable[T](o))
+    toScalaObservable[(K, Observable[T])](o1.map[(K, Observable[T])](func))
+  }
+
+  /**
    * Given an Observable that emits Observables, creates a single Observable that
    * emits the items emitted by the most recently published of those Observables.
    *
@@ -1599,6 +1622,81 @@ trait Observable[+T]
   def throttleLast(intervalDuration: Duration, scheduler: Scheduler): Observable[T] = {
     toScalaObservable[T](asJavaObservable.throttleLast(intervalDuration.length, intervalDuration.unit, scheduler))
   }
+
+  /**
+   * Applies a timeout policy for each item emitted by the Observable, using
+   * the specified scheduler to run timeout timers. If the next item isn't
+   * observed within the specified timeout duration starting from its
+   * predecessor, observers are notified of a `TimeoutException`.
+   * <p>
+   * <img width="640" src="https://raw.github.com/wiki/Netflix/RxJava/images/rx-operators/timeout.1.png">
+   *
+   * @param timeout maximum duration between items before a timeout occurs
+   * @return the source Observable modified to notify observers of a
+   *         `TimeoutException` in case of a timeout
+   */
+  def timeout(timeout: Duration): Observable[T] = {
+    toScalaObservable[T](asJavaObservable.timeout(timeout.length, timeout.unit))
+  }
+
+  /**
+   * Applies a timeout policy for each item emitted by the Observable, using
+   * the specified scheduler to run timeout timers. If the next item isn't
+   * observed within the specified timeout duration starting from its
+   * predecessor, a specified fallback Observable produces future items and
+   * notifications from that point on.
+   * <p>
+   * <img width="640" src="https://raw.github.com/wiki/Netflix/RxJava/images/rx-operators/timeout.2.png">
+   *
+   * @param timeout maximum duration between items before a timeout occurs
+   * @param other fallback Observable to use in case of a timeout
+   * @return the source Observable modified to switch to the fallback
+   *         Observable in case of a timeout
+   */
+  def timeout[U >: T](timeout: Duration, other: Observable[U]): Observable[U] = {
+    val otherJava: rx.Observable[_ <: U] = other.asJavaObservable
+    val thisJava = this.asJavaObservable.asInstanceOf[rx.Observable[U]]
+    toScalaObservable[U](thisJava.timeout(timeout.length, timeout.unit, otherJava))
+  }
+
+  /**
+   * Applies a timeout policy for each item emitted by the Observable, using
+   * the specified scheduler to run timeout timers. If the next item isn't
+   * observed within the specified timeout duration starting from its
+   * predecessor, the observer is notified of a `TimeoutException`.
+   * <p>
+   * <img width="640" src="https://raw.github.com/wiki/Netflix/RxJava/images/rx-operators/timeout.1s.png">
+   *
+   * @param timeout maximum duration between items before a timeout occurs
+   * @param scheduler Scheduler to run the timeout timers on
+   * @return the source Observable modified to notify observers of a
+   *         `TimeoutException` in case of a timeout
+   */
+  def timeout(timeout: Duration, scheduler: Scheduler): Observable[T] = {
+    toScalaObservable[T](asJavaObservable.timeout(timeout.length, timeout.unit, scheduler.asJavaScheduler))
+  }
+
+  /**
+   * Applies a timeout policy for each item emitted by the Observable, using
+   * the specified scheduler to run timeout timers. If the next item isn't
+   * observed within the specified timeout duration starting from its
+   * predecessor, a specified fallback Observable sequence produces future
+   * items and notifications from that point on.
+   * <p>
+   * <img width="640" src="https://raw.github.com/wiki/Netflix/RxJava/images/rx-operators/timeout.2s.png">
+   *
+   * @param timeout maximum duration between items before a timeout occurs
+   * @param other Observable to use as the fallback in case of a timeout
+   * @param scheduler Scheduler to run the timeout timers on
+   * @return the source Observable modified so that it will switch to the
+   *         fallback Observable in case of a timeout
+   */
+  def timeout[U >: T](timeout: Duration, other: Observable[U], scheduler: Scheduler): Observable[U] = {
+    val otherJava: rx.Observable[_ <: U] = other.asJavaObservable
+    val thisJava = this.asJavaObservable.asInstanceOf[rx.Observable[U]]
+    toScalaObservable[U](thisJava.timeout(timeout.length, timeout.unit, otherJava, scheduler.asJavaScheduler))
+  }
+
 
   /**
    * Returns an Observable that sums up the elements of this Observable.
@@ -1894,10 +1992,10 @@ trait Observable[+T]
   }
 
   /**
-   * Invokes an action if the source Observable calls <code>onError</code>.
+   * Invokes an action if the source Observable calls `onError`.
    *
    * @param onError the action to invoke if the source Observable calls
-   *                <code>onError</code>
+   *                `onError`
    * @return the source Observable with the side-effecting behavior applied
    */
   def doOnError(onError: Throwable => Unit): Observable[T] = {
@@ -1905,10 +2003,10 @@ trait Observable[+T]
   }
 
   /**
-   * Invokes an action when the source Observable calls <code>onCompleted</code>.
+   * Invokes an action when the source Observable calls `onCompleted`.
    *
    * @param onCompleted the action to invoke when the source Observable calls
-   *                    <code>onCompleted</code>
+   *                    `onCompleted`
    * @return the source Observable with the side-effecting behavior applied
    */
   def doOnCompleted(onCompleted: () => Unit): Observable[T] = {

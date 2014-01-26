@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Netflix, Inc.
+ * Copyright 2014 Netflix, Inc.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package rx.plugins;
 
 import rx.Observable;
+import rx.Observable.OnSubscribe;
 import rx.Observable.OnSubscribeFunc;
 import rx.Observer;
 import rx.Subscription;
@@ -48,7 +49,13 @@ public abstract class RxJavaObservableExecutionHook {
      *            original {@link Func1}<{@link Observer}{@code <T>}, {@link Subscription}> to be executed
      * @return {@link Func1}<{@link Observer}{@code <T>}, {@link Subscription}> function that can be modified, decorated, replaced or just returned as a pass-thru.
      */
+    @Deprecated
     public <T> OnSubscribeFunc<T> onSubscribeStart(Observable<? extends T> observableInstance, OnSubscribeFunc<T> onSubscribe) {
+        // pass-thru by default
+        return onSubscribe;
+    }
+
+    public <T> OnSubscribe<T> onSubscribeStart(Observable<? extends T> observableInstance, final OnSubscribe<T> onSubscribe) {
         // pass-thru by default
         return onSubscribe;
     }

@@ -15,6 +15,8 @@ buildscript {
 }
 
 allprojects {
+    apply plugin: 'eclipse'
+    apply plugin: 'idea'
     repositories { 
         mavenLocal()
         mavenCentral() // maven { url: 'http://jcenter.bintray.com' }
@@ -23,31 +25,33 @@ allprojects {
 
 subprojects {
     apply plugin: 'java'
-    apply plugin: 'eclipse'
-    apply plugin: 'idea'
-
     group = "com.netflix.rxjava"
 
     // make 'examples' use the same classpath
     configurations { 
         examplesCompile.extendsFrom compile
         examplesRuntime.extendsFrom runtime
+	    perfCompile.extendsFrom compile
+	    perfRuntime.extendsFrom runtime
     }
 
-    sourceSets.test.java.srcDir 'src/main/java'
 
     tasks.withType(Javadoc).each {
         it.classpath = sourceSets.main.compileClasspath
     }
 
-    //include /src/examples folder
     sourceSets { 
+		//include /src/examples folder
         examples
+		//include /src/perf folder
+		// perf //-> Not working so commented out
     }
     
-    //include 'examples' in build task
     tasks.build { 
+		//include 'examples' in build task
         dependsOn(examplesClasses)
+		//include 'perf' in build task
+        // dependsOn(perfClasses)  //-> Not working so commented out
     }
     
     eclipse {  

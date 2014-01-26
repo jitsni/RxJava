@@ -1,12 +1,12 @@
 /**
- * Copyright 2013 Netflix, Inc.
- *
+ * Copyright 2014 Netflix, Inc.
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,6 +27,7 @@ import org.mockito.InOrder;
 import rx.Observable;
 import rx.Observer;
 import rx.Subscription;
+import rx.observers.TestObserver;
 import rx.schedulers.TestScheduler;
 import rx.subscriptions.Subscriptions;
 import rx.util.functions.Action0;
@@ -64,7 +65,7 @@ public class OperationSwitchTest {
         });
 
         Observable<String> sampled = Observable.create(OperationSwitch.switchDo(source));
-        sampled.subscribe(observer);
+        sampled.subscribe(new TestObserver<String>(observer));
 
         InOrder inOrder = inOrder(observer);
 
@@ -104,7 +105,7 @@ public class OperationSwitchTest {
         });
 
         Observable<String> sampled = Observable.create(OperationSwitch.switchDo(source));
-        sampled.subscribe(observer);
+        sampled.subscribe(new TestObserver<String>(observer));
 
         InOrder inOrder = inOrder(observer);
 
@@ -150,7 +151,7 @@ public class OperationSwitchTest {
         });
 
         Observable<String> sampled = Observable.create(OperationSwitch.switchDo(source));
-        sampled.subscribe(observer);
+        sampled.subscribe(new TestObserver<String>(observer));
 
         InOrder inOrder = inOrder(observer);
 
@@ -210,7 +211,7 @@ public class OperationSwitchTest {
         });
 
         Observable<String> sampled = Observable.create(OperationSwitch.switchDo(source));
-        sampled.subscribe(observer);
+        sampled.subscribe(new TestObserver<String>(observer));
 
         InOrder inOrder = inOrder(observer);
 
@@ -275,7 +276,7 @@ public class OperationSwitchTest {
         });
 
         Observable<String> sampled = Observable.create(OperationSwitch.switchDo(source));
-        sampled.subscribe(observer);
+        sampled.subscribe(new TestObserver<String>(observer));
 
         InOrder inOrder = inOrder(observer);
 
@@ -330,7 +331,7 @@ public class OperationSwitchTest {
         });
 
         Observable<String> sampled = Observable.create(OperationSwitch.switchDo(source));
-        sampled.subscribe(observer);
+        sampled.subscribe(new TestObserver<String>(observer));
 
         InOrder inOrder = inOrder(observer);
 
@@ -379,5 +380,52 @@ public class OperationSwitchTest {
 
     @SuppressWarnings("serial")
     private class TestException extends Throwable {
+    }
+
+    @Test
+    public void testSwitchIssue737() {
+        // https://github.com/Netflix/RxJava/issues/737
+        Observable<Observable<String>> source = Observable.create(new Observable.OnSubscribeFunc<Observable<String>>() {
+            @Override
+            public Subscription onSubscribe(Observer<? super Observable<String>> observer) {
+                publishNext(observer, 0, Observable.create(new Observable.OnSubscribeFunc<String>() {
+                    @Override
+                    public Subscription onSubscribe(Observer<? super String> observer) {
+                        publishNext(observer, 10, "1-one");
+                        publishNext(observer, 20, "1-two");
+                        // The following events will be ignored
+                        publishNext(observer, 30, "1-three");
+                        publishCompleted(observer, 40);
+                        return Subscriptions.empty();
+                    }
+                }));
+                publishNext(observer, 25, Observable.create(new Observable.OnSubscribeFunc<String>() {
+                    @Override
+                    public Subscription onSubscribe(Observer<? super String> observer) {
+                        publishNext(observer, 10, "2-one");
+                        publishNext(observer, 20, "2-two");
+                        publishNext(observer, 30, "2-three");
+                        publishCompleted(observer, 40);
+                        return Subscriptions.empty();
+                    }
+                }));
+                publishCompleted(observer, 30);
+                return Subscriptions.empty();
+            }
+        });
+
+        Observable<String> sampled = Observable.create(OperationSwitch.switchDo(source));
+        sampled.subscribe(new TestObserver<String>(observer));
+
+        scheduler.advanceTimeTo(1000, TimeUnit.MILLISECONDS);
+
+        InOrder inOrder = inOrder(observer);
+        inOrder.verify(observer, times(1)).onNext("1-one");
+        inOrder.verify(observer, times(1)).onNext("1-two");
+        inOrder.verify(observer, times(1)).onNext("2-one");
+        inOrder.verify(observer, times(1)).onNext("2-two");
+        inOrder.verify(observer, times(1)).onNext("2-three");
+        inOrder.verify(observer, times(1)).onCompleted();
+        inOrder.verifyNoMoreInteractions();
     }
 }

@@ -1,12 +1,12 @@
 /**
- * Copyright 2013 Netflix, Inc.
- *
+ * Copyright 2014 Netflix, Inc.
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,26 +40,40 @@ public class OperationDoOnEach {
 
         @Override
         public Subscription onSubscribe(final Observer<? super T> observer) {
-            final SafeObservableSubscription subscription = new SafeObservableSubscription();
-            return subscription.wrap(sequence.subscribe(new SafeObserver<T>(subscription, new Observer<T>() {
+            return sequence.subscribe(new Observer<T>(observer) {
                 @Override
                 public void onCompleted() {
-                    doOnEachObserver.onCompleted();
+                    try {
+                        doOnEachObserver.onCompleted();
+                    } catch (Throwable e) {
+                        onError(e);
+                        return;
+                    }
                     observer.onCompleted();
                 }
 
                 @Override
                 public void onError(Throwable e) {
-                    doOnEachObserver.onError(e);
+                    try {
+                        doOnEachObserver.onError(e);
+                    } catch (Throwable e2) {
+                        observer.onError(e2);
+                        return;
+                    }
                     observer.onError(e);
                 }
 
                 @Override
                 public void onNext(T value) {
-                    doOnEachObserver.onNext(value);
+                    try {
+                        doOnEachObserver.onNext(value);
+                    } catch (Throwable e) {
+                        onError(e);
+                        return;
+                    }
                     observer.onNext(value);
                 }
-            })));
+            });
         }
 
     }
